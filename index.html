@@ -1,10 +1,9 @@
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>IMEI TRACKER | BY FAZAL-E-AZEEM</title>
+  <title>IMEI HACKER | MATRIX MODE</title>
   
   <!-- Three.js -->
   <script src="https://cdn.jsdelivr.net/npm/three@0.157.0/build/three.min.js"></script>
@@ -27,13 +26,12 @@
 
     canvas { display: block; }
 
-    /* Matrix Rain Canvas */
     #matrix-canvas {
       position: fixed;
       top: 0; left: 0;
       width: 100%; height: 100%;
       z-index: 0;
-      opacity: 0.7;
+      opacity: 0.5; /* Reduced for better text visibility */
     }
 
     #three-canvas {
@@ -104,7 +102,7 @@
       border-radius: 8px;
       box-shadow: 0 0 20px rgba(0, 255, 0, 0.6);
       transition: all 0.3s;
-      letter-spacing: 2px;
+      letter-spacing: 1px; /* Reduced for better fit */
     }
 
     input:focus {
@@ -158,6 +156,14 @@
       color: #0f0;
       box-shadow: 0 0 25px rgba(255, 0, 0, 0.6);
       display: none;
+      text-align: center; /* Center content */
+    }
+
+    .result h2 {
+      font-size: 1.8rem;
+      color: #0ff;
+      text-shadow: 0 0 10px #0ff;
+      margin-bottom: 10px;
     }
 
     .result img {
@@ -165,7 +171,8 @@
       border: 3px solid #0f0;
       border-radius: 12px;
       box-shadow: 0 0 25px #0f0;
-      margin: 12px 0;
+      margin: 12px auto;
+      display: block;
     }
 
     .info-grid {
@@ -181,6 +188,7 @@
       border-radius: 8px;
       border-left: 5px solid #0f0;
       transition: 0.3s;
+      text-align: left;
     }
 
     .info-item:hover {
@@ -190,6 +198,14 @@
 
     .info-item strong {
       color: #0ff;
+    }
+
+    .error-msg {
+      color: #f00;
+      font-weight: bold;
+      font-size: 1.5rem;
+      text-shadow: 0 0 10px #f00;
+      margin: 20px 0;
     }
 
     #whatsapp-3d {
@@ -252,6 +268,20 @@
       0%, 100% { height: 5px; }
       50% { height: 25px; }
     }
+
+    /* Mobile Optimizations */
+    @media (max-width: 600px) {
+      h1 { font-size: 2rem; }
+      .input-group { flex-direction: column; gap: 10px; }
+      input, button { font-size: 1rem; padding: 10px; }
+      .terminal { padding: 15px; border-radius: 10px; }
+      .result { padding: 12px; }
+      .result h2 { font-size: 1.5rem; }
+      .result img { max-width: 120px; }
+      .info-grid { grid-template-columns: 1fr; }
+      .info-item { font-size: 0.9rem; }
+      #whatsapp-3d { width: 60px; height: 60px; bottom: 20px; right: 20px; }
+    }
   </style>
 </head>
 <body>
@@ -279,7 +309,7 @@
 
         <div id="result" class="result">
           <h2 id="device-name"></h2>
-          <img id="device-img" src="" alt="Device" />
+          <img id="device-img" src="" alt="Device Photo" />
           <div class="info-grid" id="info-grid"></div>
         </div>
       </div>
@@ -289,7 +319,6 @@
   <!-- 3D WhatsApp -->
   <div id="whatsapp-3d"></div>
 
-  <!-- Audio Context Unlocker -->
   <script>
     // === AUDIO SYSTEM ===
     let audioContext, typingSound, hackSound, errorSound, ambientLoop;
@@ -300,10 +329,10 @@
       audioContext = new (window.AudioContext || window.webkitAudioContext)();
       isAudioUnlocked = true;
 
-      // Load Sounds (Base64 embedded to avoid CORS)
-      loadSound('typing', 'data:audio/wav;base64,UklGRuQAAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQAAAAA=');
-      loadSound('hack', 'data:audio/wav;base64,UklGRuQAAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQAAAAA=');
-      loadSound('error', 'data:audio/wav;base64,UklGRuQAAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQAAAAA=');
+      // Placeholder sounds (embed real base64 if needed; these are silent for now)
+      loadSound('typing', 'data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQAAAAA=');
+      loadSound('hack', 'data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQAAAAA=');
+      loadSound('error', 'data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQAAAAA=');
       loadAmbient();
 
       document.body.addEventListener('click', () => {}, { once: true });
@@ -327,7 +356,6 @@
     }
 
     function loadAmbient() {
-      // Simple synth ambient loop
       const oscillator = audioContext.createOscillator();
       const gainNode = audioContext.createGain();
       oscillator.type = 'sine';
@@ -338,7 +366,6 @@
       ambientLoop = { oscillator, gainNode };
     }
 
-    // Visualizer
     function showVisualizer() {
       const viz = document.getElementById('audio-viz');
       viz.style.display = 'block';
@@ -392,7 +419,12 @@
       requestAnimationFrame(animateMatrix);
     }
 
-    window.addEventListener('resize', initMatrix);
+    window.addEventListener('resize', () => {
+      initMatrix();
+      camera.aspect = window.innerWidth / window.innerHeight;
+      camera.updateProjectionMatrix();
+      renderer.setSize(window.innerWidth, window.innerHeight);
+    });
 
     // === 3D SCENE ===
     let scene, camera, renderer, textMesh, whatsappMesh;
@@ -446,7 +478,7 @@
       const c = canvas.getContext('2d');
       c.fillStyle = '#25D366'; c.fillRect(0,0,256,256);
       c.font = 'bold 160px Arial'; c.fillStyle = 'white';
-      c.textAlign = 'center'; c.fillText('WhatsApp', 128, 190);
+      c.textAlign = 'center'; c.fillText('💬', 128, 190);
 
       const tex = new THREE.CanvasTexture(canvas);
       const plane = new THREE.Mesh(
@@ -505,18 +537,25 @@
       const loading = document.getElementById('loading');
       const result = document.getElementById('result');
       const grid = document.getElementById('info-grid');
+      const deviceName = document.getElementById('device-name');
+      const deviceImg = document.getElementById('device-img');
       loading.style.display = 'block';
       result.style.display = 'none';
       grid.innerHTML = '';
+      deviceName.textContent = '';
+      deviceImg.src = '';
 
       try {
         const res = await fetch(apiUrl + imei);
+        if (!res.ok) throw new Error('API response not OK: ' + res.status);
         const data = await res.json();
-        if (!data.result) throw new Error();
+        if (!data.result) throw new Error('No result in data');
 
         const { header, items } = data.result;
-        document.getElementById('device-name').textContent = `${header.brand} ${header.model}`;
-        document.getElementById('device-img').src = header.photo;
+        deviceName.textContent = `${header.brand} ${header.model}`;
+        deviceImg.src = header.photo;
+        deviceName.style.display = 'block';
+        deviceImg.style.display = 'block';
 
         items.forEach(item => {
           if (item.role === 'header') {
@@ -527,6 +566,7 @@
             div.style.color = '#0ff';
             div.style.borderBottom = '2px dashed #0f0';
             div.style.paddingBottom = '6px';
+            div.style.textAlign = 'center';
             div.textContent = item.title;
             grid.appendChild(div);
           } else if (item.role === 'item') {
@@ -539,8 +579,11 @@
 
         result.style.display = 'block';
         playSound(hackSound || typingSound);
-      } catch {
-        grid.innerHTML = `<div style="grid-column:1/-1; color:#f00; text-align:center; font-weight:bold;">TARGET OFFLINE</div>`;
+      } catch (err) {
+        console.error('API Error:', err); // Log for debugging
+        deviceName.style.display = 'none';
+        deviceImg.style.display = 'none';
+        grid.innerHTML = `<div class="error-msg" style="grid-column:1/-1;">TARGET OFFLINE</div>`;
         result.style.display = 'block';
         playSound(errorSound);
       } finally {
