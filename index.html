@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -132,6 +133,12 @@
             box-shadow: 0 0 25px #0ff, 0 0 40px #f0f;
         }
         
+        button:disabled {
+            opacity: 0.7;
+            cursor: not-allowed;
+            transform: perspective(500px) rotateX(10deg) scale(1);
+        }
+        
         .result-section {
             display: none;
             background: rgba(0, 10, 20, 0.8);
@@ -232,6 +239,19 @@
             font-size: 1.1rem;
             border-top: 1px solid #0ff;
             padding-top: 15px;
+        }
+        
+        .error-message {
+            text-align: center;
+            padding: 20px;
+            color: #ff0066;
+            text-shadow: 0 0 10px #ff0066;
+            font-size: 1.2rem;
+            border: 2px solid #ff0066;
+            border-radius: 10px;
+            box-shadow: 0 0 15px #ff0066;
+            margin: 20px 0;
+            display: none;
         }
         
         .contact-section {
@@ -502,6 +522,8 @@
             </div>
         </section>
         
+        <div class="error-message" id="error-message"></div>
+        
         <section class="result-section" id="result-section">
             <!-- Results will be displayed here -->
         </section>
@@ -571,7 +593,13 @@
             const imeiInput = document.getElementById('imei-input').value.trim();
             
             if(!imeiInput) {
-                alert('Please enter an IMEI number');
+                showError('Please enter an IMEI number');
+                return;
+            }
+            
+            // Validate IMEI format (15 digits)
+            if (!/^\d{15}$/.test(imeiInput)) {
+                showError('Please enter a valid 15-digit IMEI number');
                 return;
             }
             
@@ -580,21 +608,102 @@
             checkBtn.textContent = 'CHECKING...';
             checkBtn.disabled = true;
             
-            // Make API request
-            fetch(`https://ng-imei-info.vercel.app/?imei_num=${imeiInput}`)
-                .then(response => response.json())
+            // Hide previous results and errors
+            document.getElementById('result-section').style.display = 'none';
+            hideError();
+            
+            // Make API request with proper error handling
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 15000); // 15 second timeout
+            
+            // Use a proxy to handle CORS issues
+            const proxyUrl = 'https://cors-anywhere.herokuapp.com/';
+            const targetUrl = `https://ng-imei-info.vercel.app/?imei_num=${imeiInput}`;
+            
+            fetch(proxyUrl + targetUrl, {
+                signal: controller.signal,
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest'
+                }
+            })
+                .then(response => {
+                    clearTimeout(timeoutId);
+                    if (!response.ok) {
+                        throw new Error(`HTTP error! status: ${response.status}`);
+                    }
+                    return response.json();
+                })
                 .then(data => {
-                    displayResults(data);
-                    checkBtn.textContent = 'CHECK DEVICE INFO';
-                    checkBtn.disabled = false;
+                    if (data && data.result) {
+                        displayResults(data);
+                    } else {
+                        throw new Error('Invalid response from server');
+                    }
                 })
                 .catch(error => {
+                    clearTimeout(timeoutId);
                     console.error('Error fetching IMEI data:', error);
-                    alert('Error fetching device information. Please try again.');
+                    
+                    if (error.name === 'AbortError') {
+                        showError('Request timed out. Please try again.');
+                    } else if (error.message.includes('Failed to fetch')) {
+                        // Try direct API call if proxy fails
+                        fetchDirectAPI(imeiInput, controller);
+                    } else {
+                        showError('Error fetching device information. Please try again.');
+                    }
+                })
+                .finally(() => {
                     checkBtn.textContent = 'CHECK DEVICE INFO';
                     checkBtn.disabled = false;
                 });
         });
+        
+        // Direct API call without proxy
+        function fetchDirectAPI(imeiInput, controller) {
+            const timeoutId = setTimeout(() => controller.abort(), 10000);
+            
+            fetch(`https://ng-imei-info.vercel.app/?imei_num=${imeiInput}`, {
+                signal: controller.signal,
+                mode: 'cors'
+            })
+                .then(response => {
+                    clearTimeout(timeoutId);
+                    if (!response.ok) {
+                        throw new Error(`HTTP error! status: ${response.status}`);
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    if (data && data.result) {
+                        displayResults(data);
+                    } else {
+                        throw new Error('Invalid response from server');
+                    }
+                })
+                .catch(error => {
+                    clearTimeout(timeoutId);
+                    console.error('Direct API error:', error);
+                    
+                    if (error.name === 'AbortError') {
+                        showError('Request timed out. Please try again.');
+                    } else if (error.message.includes('Failed to fetch') || error.message.includes('NetworkError')) {
+                        showError('Network error. Please check your connection and try again.');
+                    } else {
+                        showError('Error fetching device information. Please try again.');
+                    }
+                });
+        }
+        
+        function showError(message) {
+            const errorElement = document.getElementById('error-message');
+            errorElement.textContent = message;
+            errorElement.style.display = 'block';
+        }
+        
+        function hideError() {
+            document.getElementById('error-message').style.display = 'none';
+        }
         
         function displayResults(data) {
             const resultSection = document.getElementById('result-section');
@@ -607,9 +716,12 @@
             const resultHeader = document.createElement('div');
             resultHeader.className = 'result-header';
             
+            // Handle missing photo
+            const photoUrl = data.result.header.photo || 'https://via.placeholder.com/200x200/0a1420/0ff?text=No+Image+Available';
+            
             resultHeader.innerHTML = `
                 <div class="device-image">
-                    <img src="${data.result.header.photo}" alt="${data.result.header.model}">
+                    <img src="${photoUrl}" alt="${data.result.header.model}" onerror="this.src='https://via.placeholder.com/200x200/0a1420/0ff?text=Image+Not+Available'">
                 </div>
                 <div class="device-info">
                     <h2>${data.result.header.brand} ${data.result.header.model}</h2>
@@ -657,6 +769,16 @@
             // Scroll to results
             resultSection.scrollIntoView({ behavior: 'smooth' });
         }
+        
+        // Allow Enter key to trigger the check
+        document.getElementById('imei-input').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                document.getElementById('check-btn').click();
+            }
+        });
+        
+        // Add sample IMEI for testing
+        document.getElementById('imei-input').value = '353010111111110';
     </script>
 </body>
 </html>
