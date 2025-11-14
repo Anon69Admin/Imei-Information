@@ -1,0 +1,497 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>IMEI Information Lookup | Faxal</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Courier New', monospace;
+        }
+        
+        body {
+            background-color: #000;
+            color: #0f0;
+            overflow: hidden;
+            height: 100vh;
+            position: relative;
+        }
+        
+        #matrix-bg {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+            opacity: 0.3;
+        }
+        
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 20px;
+            position: relative;
+            z-index: 1;
+        }
+        
+        header {
+            text-align: center;
+            margin-bottom: 30px;
+            padding: 20px;
+            border-bottom: 1px solid #0f0;
+            text-shadow: 0 0 10px #0f0;
+            animation: glow 2s ease-in-out infinite alternate;
+        }
+        
+        h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+            letter-spacing: 3px;
+        }
+        
+        .subtitle {
+            font-size: 1.2rem;
+            color: #0a0;
+        }
+        
+        .input-section {
+            background-color: rgba(0, 20, 0, 0.7);
+            padding: 25px;
+            border-radius: 5px;
+            border: 1px solid #0f0;
+            box-shadow: 0 0 15px rgba(0, 255, 0, 0.5);
+            margin-bottom: 30px;
+        }
+        
+        .input-group {
+            display: flex;
+            margin-bottom: 15px;
+        }
+        
+        input {
+            flex: 1;
+            padding: 12px;
+            background-color: #000;
+            border: 1px solid #0f0;
+            color: #0f0;
+            font-size: 1.1rem;
+            border-radius: 0;
+            outline: none;
+        }
+        
+        input:focus {
+            box-shadow: 0 0 10px #0f0;
+        }
+        
+        button {
+            padding: 12px 25px;
+            background-color: #000;
+            color: #0f0;
+            border: 1px solid #0f0;
+            cursor: pointer;
+            font-size: 1.1rem;
+            margin-left: 10px;
+            transition: all 0.3s;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        
+        button:hover {
+            background-color: #0f0;
+            color: #000;
+            box-shadow: 0 0 15px #0f0;
+        }
+        
+        .result-section {
+            background-color: rgba(0, 20, 0, 0.7);
+            padding: 25px;
+            border-radius: 5px;
+            border: 1px solid #0f0;
+            box-shadow: 0 0 15px rgba(0, 255, 0, 0.5);
+            min-height: 400px;
+            display: none;
+        }
+        
+        .result-section.active {
+            display: block;
+            animation: fadeIn 0.5s;
+        }
+        
+        .loading {
+            text-align: center;
+            padding: 20px;
+            display: none;
+        }
+        
+        .loading.active {
+            display: block;
+        }
+        
+        .loading span {
+            display: inline-block;
+            animation: blink 1s infinite;
+        }
+        
+        .phone-image {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        
+        .phone-image img {
+            max-width: 200px;
+            border: 1px solid #0f0;
+            box-shadow: 0 0 10px #0f0;
+        }
+        
+        .info-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 20px;
+        }
+        
+        .info-section {
+            margin-bottom: 20px;
+        }
+        
+        .info-header {
+            font-size: 1.3rem;
+            margin-bottom: 10px;
+            padding-bottom: 5px;
+            border-bottom: 1px solid #0f0;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            text-shadow: 0 0 5px #0f0;
+        }
+        
+        .info-item {
+            margin-bottom: 8px;
+            display: flex;
+            justify-content: space-between;
+        }
+        
+        .info-label {
+            font-weight: bold;
+            color: #0a0;
+        }
+        
+        .info-value {
+            color: #0f0;
+        }
+        
+        .error {
+            color: #f00;
+            text-align: center;
+            padding: 20px;
+            display: none;
+        }
+        
+        .error.active {
+            display: block;
+        }
+        
+        .made-by {
+            text-align: center;
+            margin-top: 20px;
+            font-size: 0.9rem;
+            color: #0a0;
+        }
+        
+        footer {
+            text-align: center;
+            margin-top: 30px;
+            padding: 15px;
+            border-top: 1px solid #0f0;
+            font-size: 0.9rem;
+            color: #0a0;
+        }
+        
+        @keyframes glow {
+            from {
+                text-shadow: 0 0 5px #0f0;
+            }
+            to {
+                text-shadow: 0 0 15px #0f0, 0 0 20px #0f0;
+            }
+        }
+        
+        @keyframes blink {
+            0%, 100% {
+                opacity: 1;
+            }
+            50% {
+                opacity: 0.3;
+            }
+        }
+        
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+            }
+            to {
+                opacity: 1;
+            }
+        }
+        
+        /* Terminal cursor effect */
+        .cursor {
+            display: inline-block;
+            width: 10px;
+            height: 20px;
+            background-color: #0f0;
+            margin-left: 5px;
+            animation: blink 1s infinite;
+        }
+        
+        /* 3D effect for containers */
+        .container-3d {
+            transform: perspective(1000px) rotateX(5deg);
+            transform-style: preserve-3d;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="matrix-bg"></canvas>
+    
+    <div class="container">
+        <header>
+            <h1>IMEI INFORMATION LOOKUP</h1>
+            <div class="subtitle">MATRIX TERMINAL INTERFACE</div>
+        </header>
+        
+        <div class="input-section container-3d">
+            <div class="input-group">
+                <input type="text" id="imei-input" placeholder="ENTER IMEI NUMBER..." maxlength="15">
+                <button id="lookup-btn">HACK</button>
+            </div>
+            <div class="note">Enter a 15-digit IMEI number to retrieve device information</div>
+        </div>
+        
+        <div class="loading" id="loading">
+            <span>DECRYPTING DEVICE INFORMATION</span>
+            <span class="cursor"></span>
+        </div>
+        
+        <div class="error" id="error">
+            ERROR: UNABLE TO RETRIEVE DEVICE INFORMATION. CHECK IMEI AND TRY AGAIN.
+        </div>
+        
+        <div class="result-section container-3d" id="result-section">
+            <!-- Results will be populated here -->
+        </div>
+        
+        <div class="made-by">
+            MADE BY: FAZAL-E-AZEEM
+        </div>
+        
+        <footer>
+            IMEI INFORMATION LOOKUP TOOL | FOR EDUCATIONAL PURPOSES ONLY MADE WITH HEART ❤️ BY FAZAL-E-AZEEM 
+        </footer>
+    </div>
+
+    <script>
+        // Matrix Rain Effect
+        const canvas = document.getElementById('matrix-bg');
+        const ctx = canvas.getContext('2d');
+        
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+        
+        const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789$+-*/=%\"'#&_(),.;:?!\\|{}<>[]^~";
+        const charArray = chars.split("");
+        const fontSize = 14;
+        const columns = canvas.width / fontSize;
+        
+        const drops = [];
+        for (let i = 0; i < columns; i++) {
+            drops[i] = 1;
+        }
+        
+        function drawMatrix() {
+            ctx.fillStyle = "rgba(0, 0, 0, 0.04)";
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            
+            ctx.fillStyle = "#0f0";
+            ctx.font = fontSize + "px monospace";
+            
+            for (let i = 0; i < drops.length; i++) {
+                const text = charArray[Math.floor(Math.random() * charArray.length)];
+                ctx.fillText(text, i * fontSize, drops[i] * fontSize);
+                
+                if (drops[i] * fontSize > canvas.height && Math.random() > 0.975) {
+                    drops[i] = 0;
+                }
+                
+                drops[i]++;
+            }
+        }
+        
+        setInterval(drawMatrix, 35);
+        
+        // Handle window resize
+        window.addEventListener('resize', function() {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+        });
+        
+        // IMEI Lookup Functionality
+        document.getElementById('lookup-btn').addEventListener('click', lookupIMEI);
+        document.getElementById('imei-input').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                lookupIMEI();
+            }
+        });
+        
+        function lookupIMEI() {
+            const imei = document.getElementById('imei-input').value.trim();
+            
+            if (!imei || imei.length !== 15) {
+                showError("INVALID IMEI: MUST BE 15 DIGITS");
+                return;
+            }
+            
+            // Show loading, hide results and error
+            document.getElementById('loading').classList.add('active');
+            document.getElementById('result-section').classList.remove('active');
+            document.getElementById('error').classList.remove('active');
+            
+            // Fetch data from API
+            fetch(`https://ng-imei-info.vercel.app/?imei_num=${imei}`)
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('Network response was not ok');
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    // Hide loading
+                    document.getElementById('loading').classList.remove('active');
+                    
+                    if (data && data.result) {
+                        displayResults(data.result);
+                    } else {
+                        throw new Error('Invalid response format');
+                    }
+                })
+                .catch(error => {
+                    console.error('Error fetching IMEI data:', error);
+                    document.getElementById('loading').classList.remove('active');
+                    showError("NETWORK ERROR: UNABLE TO FETCH DATA");
+                });
+        }
+        
+        function displayResults(data) {
+            const resultSection = document.getElementById('result-section');
+            resultSection.innerHTML = '';
+            
+            // Create header with basic info
+            const header = document.createElement('div');
+            header.className = 'phone-header';
+            
+            const phoneImage = document.createElement('div');
+            phoneImage.className = 'phone-image';
+            phoneImage.innerHTML = `<img src="${data.header.photo}" alt="${data.header.brand} ${data.header.model}">`;
+            
+            const phoneInfo = document.createElement('div');
+            phoneInfo.className = 'info-section';
+            phoneInfo.innerHTML = `
+                <div class="info-header">DEVICE INFORMATION</div>
+                <div class="info-item">
+                    <span class="info-label">BRAND:</span>
+                    <span class="info-value">${data.header.brand}</span>
+                </div>
+                <div class="info-item">
+                    <span class="info-label">MODEL:</span>
+                    <span class="info-value">${data.header.model}</span>
+                </div>
+                <div class="info-item">
+                    <span class="info-label">IMEI:</span>
+                    <span class="info-value">${data.header.imei}</span>
+                </div>
+            `;
+            
+            header.appendChild(phoneImage);
+            header.appendChild(phoneInfo);
+            resultSection.appendChild(header);
+            
+            // Group items by section
+            const sections = {};
+            let currentSection = '';
+            
+            data.items.forEach(item => {
+                if (item.role === 'header') {
+                    currentSection = item.title;
+                    sections[currentSection] = [];
+                } else if (item.role === 'item' && currentSection) {
+                    sections[currentSection].push(item);
+                }
+            });
+            
+            // Create info grid
+            const infoGrid = document.createElement('div');
+            infoGrid.className = 'info-grid';
+            
+            // Add each section to the grid
+            for (const [sectionTitle, items] of Object.entries(sections)) {
+                const sectionDiv = document.createElement('div');
+                sectionDiv.className = 'info-section';
+                
+                const sectionHeader = document.createElement('div');
+                sectionHeader.className = 'info-header';
+                sectionHeader.textContent = sectionTitle;
+                sectionDiv.appendChild(sectionHeader);
+                
+                items.forEach(item => {
+                    const itemDiv = document.createElement('div');
+                    itemDiv.className = 'info-item';
+                    itemDiv.innerHTML = `
+                        <span class="info-label">${item.title}:</span>
+                        <span class="info-value">${item.content}</span>
+                    `;
+                    sectionDiv.appendChild(itemDiv);
+                });
+                
+                infoGrid.appendChild(sectionDiv);
+            }
+            
+            resultSection.appendChild(infoGrid);
+            
+            // Add made by section
+            const madeBy = document.createElement('div');
+            madeBy.className = 'made-by';
+            madeBy.innerHTML = 'MADE BY: FAZAL-E-AZEEM';
+            resultSection.appendChild(madeBy);
+            
+            // Show results
+            resultSection.classList.add('active');
+        }
+        
+        function showError(message) {
+            const errorDiv = document.getElementById('error');
+            errorDiv.textContent = message;
+            errorDiv.classList.add('active');
+        }
+        
+        // Add some initial terminal-style typing effect
+        window.addEventListener('DOMContentLoaded', () => {
+            const subtitle = document.querySelector('.subtitle');
+            const originalText = subtitle.textContent;
+            subtitle.textContent = '';
+            
+            let i = 0;
+            const typeWriter = () => {
+                if (i < originalText.length) {
+                    subtitle.textContent += originalText.charAt(i);
+                    i++;
+                    setTimeout(typeWriter, 100);
+                }
+            };
+            
+            setTimeout(typeWriter, 1000);
+        });
+    </script>
+</body>
+</html>
