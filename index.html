@@ -1,700 +1,312 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
     <title>MATRIX OVERLOAD | IMEI Lookup</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-            font-family: 'Courier New', monospace;
-        }
-
-        body {
-            background: #000;
-            color: #0f0;
-            min-height: 100vh;
-            overflow-x: hidden;
-            position: relative;
-        }
-
-        #matrix {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            z-index: -1;
-        }
-
-        .container {
-            max-width: 1200px;
-            margin: 0 auto;
-            padding: 20px;
-            position: relative;
-            z-index: 1;
-        }
-
-        header {
-            text-align: center;
-            padding: 40px 0;
-            position: relative;
-        }
-
-        .matrix-text {
-            font-size: 5vw;
-            font-weight: bold;
-            text-transform: uppercase;
-            color: #0f0;
-            text-shadow: 
-                0 0 10px #0f0,
-                0 0 20px #0f0,
-                0 0 40px #0f0,
-                0 0 80px #0f0;
-            animation: wobble 5s infinite ease-in-out, pulse 2s infinite alternate, glitch 8s infinite;
-            transform-style: preserve-3d;
-            perspective: 500px;
-            margin-bottom: 10px;
-            letter-spacing: 5px;
-        }
-
-        .subtitle {
-            font-size: 1.5rem;
-            color: #f00;
-            text-shadow: 0 0 10px #f00;
-            margin-bottom: 40px;
-            animation: shake 5s infinite;
-        }
-
-        .content {
-            display: flex;
-            flex-wrap: wrap;
-            justify-content: space-between;
-            gap: 30px;
-            margin-bottom: 50px;
-        }
-
-        .form-container, .result-container {
-            flex: 1;
-            min-width: 300px;
-            background: rgba(0, 20, 0, 0.7);
-            border: 2px solid #0f0;
-            border-radius: 10px;
-            padding: 30px;
-            box-shadow: 0 0 20px #0f0, inset 0 0 20px rgba(0, 255, 0, 0.2);
-            animation: pulse 3s infinite alternate;
-            position: relative;
-            overflow: hidden;
-        }
-
-        .form-container::before, .result-container::before {
-            content: "";
-            position: absolute;
-            top: -10px;
-            left: -10px;
-            right: -10px;
-            bottom: -10px;
-            background: linear-gradient(45deg, #0f0, #f00, #0f0);
-            z-index: -1;
-            border-radius: 12px;
-            opacity: 0.3;
-            animation: rotate 10s linear infinite;
-        }
-
-        .form-title, .result-title {
-            font-size: 1.8rem;
-            color: #0f0;
-            text-align: center;
-            margin-bottom: 25px;
-            text-shadow: 0 0 10px #0f0;
-            position: relative;
-        }
-
-        .form-title::after, .result-title::after {
-            content: "";
-            position: absolute;
-            bottom: -10px;
-            left: 50%;
-            transform: translateX(-50%);
-            width: 100px;
-            height: 3px;
-            background: #0f0;
-            box-shadow: 0 0 10px #0f0;
-        }
-
-        .input-group {
-            margin-bottom: 20px;
-        }
-
-        label {
-            display: block;
-            margin-bottom: 10px;
-            font-size: 1.2rem;
-            color: #0f0;
-        }
-
-        input {
-            width: 100%;
-            padding: 15px;
-            background: rgba(0, 10, 0, 0.8);
-            border: 2px solid #0f0;
-            border-radius: 5px;
-            color: #0f0;
-            font-size: 1.2rem;
-            outline: none;
-            transition: all 0.3s;
-        }
-
-        input:focus {
-            box-shadow: 0 0 15px #0f0;
-            border-color: #0f0;
-        }
-
-        button {
-            width: 100%;
-            padding: 15px;
-            background: linear-gradient(to bottom, #0a0, #030);
-            border: 2px solid #0f0;
-            border-radius: 5px;
-            color: #0f0;
-            font-size: 1.3rem;
-            font-weight: bold;
-            text-transform: uppercase;
-            cursor: pointer;
-            transition: all 0.3s;
-            text-shadow: 0 0 5px #0f0;
-            letter-spacing: 2px;
-            animation: pulse 2s infinite;
-            position: relative;
-            overflow: hidden;
-        }
-
-        button::before {
-            content: "";
-            position: absolute;
-            top: 0;
-            left: -100%;
-            width: 100%;
-            height: 100%;
-            background: linear-gradient(90deg, transparent, rgba(0, 255, 0, 0.4), transparent);
-            transition: 0.5s;
-        }
-
-        button:hover::before {
-            left: 100%;
-        }
-
-        button:hover {
-            background: linear-gradient(to bottom, #0f0, #060);
-            color: #000;
-            box-shadow: 0 0 20px #0f0;
-            transform: translateY(-3px);
-        }
-
-        button:active {
-            transform: translateY(1px);
-        }
-
-        .result-content {
-            min-height: 200px;
-            padding: 20px;
-            background: rgba(0, 10, 0, 0.5);
-            border-radius: 5px;
-            font-family: monospace;
-            font-size: 1.1rem;
-            line-height: 1.6;
-            overflow-x: auto;
-        }
-
-        .error {
-            color: #f00;
-            text-shadow: 0 0 5px #f00;
-            animation: shake 0.5s;
-        }
-
-        .success {
-            color: #0f0;
-            text-shadow: 0 0 5px #0f0;
-        }
-
-        .loading {
-            text-align: center;
-            color: #0f0;
-            font-size: 1.5rem;
-            animation: spin 1.5s infinite linear;
-        }
-
-        footer {
-            text-align: center;
-            padding: 20px;
-            border-top: 1px solid #0f0;
-            margin-top: 40px;
-            position: relative;
-        }
-
-        .contact-section {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            gap: 15px;
-            margin: 20px 0;
-        }
-
-        .whatsapp-icon {
-            display: inline-block;
-            font-size: 3rem;
-            color: #0f0;
-            text-shadow: 0 0 10px #0f0;
-            animation: spin3d 8s infinite linear, pulse 2s infinite alternate;
-            transform-style: preserve-3d;
-            transition: all 0.3s;
-        }
-
-        .whatsapp-icon:hover {
-            color: #25D366;
-            text-shadow: 0 0 20px #25D366;
-            transform: scale(1.2) rotate(10deg);
-        }
-
-        .contact-btn {
-            display: inline-block;
-            padding: 12px 30px;
-            background: linear-gradient(to bottom, #0a0, #030);
-            border: 2px solid #0f0;
-            border-radius: 5px;
-            color: #0f0;
-            font-size: 1.1rem;
-            font-weight: bold;
-            text-decoration: none;
-            text-transform: uppercase;
-            cursor: pointer;
-            transition: all 0.3s;
-            text-shadow: 0 0 5px #0f0;
-            letter-spacing: 1px;
-            animation: pulse 2s infinite;
-        }
-
-        .contact-btn:hover {
-            background: linear-gradient(to bottom, #0f0, #060);
-            color: #000;
-            box-shadow: 0 0 20px #0f0;
-            transform: translateY(-3px);
-        }
-
-        .copyright {
-            font-size: 1rem;
-            color: #0a0;
-            margin-top: 10px;
-        }
-
-        /* Animations */
-        @keyframes wobble {
-            0%, 100% { transform: rotate3d(1, 1, 0, -5deg); }
-            50% { transform: rotate3d(1, 1, 0, 5deg); }
-        }
-
-        @keyframes pulse {
-            0% { opacity: 0.8; }
-            100% { opacity: 1; }
-        }
-
-        @keyframes glitch {
-            0%, 100% { transform: translate(0); }
-            10% { transform: translate(-2px, -2px); }
-            20% { transform: translate(2px, 2px); }
-            30% { transform: translate(-2px, 2px); }
-            40% { transform: translate(2px, -2px); }
-            50% { transform: translate(0); }
-        }
-
-        @keyframes shake {
-            0%, 100% { transform: translateX(0); }
-            10%, 30%, 50%, 70%, 90% { transform: translateX(-5px); }
-            20%, 40%, 60%, 80% { transform: translateX(5px); }
-        }
-
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
-
-        @keyframes spin3d {
-            0% { transform: rotateY(0deg); }
-            100% { transform: rotateY(360deg); }
-        }
-
-        @keyframes rotate {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
-
-        /* Status indicator */
-        .status-indicator {
-            position: fixed;
-            top: 20px;
-            right: 20px;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            background: rgba(0, 20, 0, 0.7);
-            padding: 10px 15px;
-            border-radius: 30px;
-            border: 1px solid #0f0;
-            box-shadow: 0 0 10px #0f0;
-            z-index: 100;
-        }
-
-        .status-dot {
-            width: 12px;
-            height: 12px;
-            border-radius: 50%;
-            background: #0f0;
-            box-shadow: 0 0 10px #0f0;
-            animation: pulse 1s infinite alternate;
-        }
-
-        .status-text {
-            font-size: 0.9rem;
-            color: #0f0;
-        }
-
-        /* Terminal lines */
-        .terminal-line {
-            position: absolute;
-            width: 100%;
-            height: 1px;
-            background: linear-gradient(90deg, transparent, #0f0, transparent);
-            opacity: 0.3;
-        }
-
-        /* Mobile Responsive */
-        @media (max-width: 768px) {
-            .matrix-text {
-                font-size: 10vw;
-            }
-            
-            .subtitle {
-                font-size: 1.2rem;
-            }
-            
-            .content {
-                flex-direction: column;
-            }
-            
-            .form-container, .result-container {
-                min-width: 100%;
-            }
-            
-            input, button {
-                font-size: 1rem;
-            }
-            
-            .status-indicator {
-                top: 10px;
-                right: 10px;
-                padding: 8px 12px;
-            }
-        }
-
-        @media (max-width: 480px) {
-            .container {
-                padding: 10px;
-            }
-            
-            .form-container, .result-container {
-                padding: 20px;
-            }
-            
-            .matrix-text {
-                font-size: 12vw;
-                letter-spacing: 2px;
-            }
-        }
+        * { margin:0; padding:0; box-sizing:border-box; font-family:'Courier New', monospace; }
+        body { background:#000; color:#0f0; min-height:100vh; overflow-x:hidden; position:relative; }
+        #matrix { position:fixed; top:0; left:0; width:100%; height:100%; z-index:-1; }
+        .container { max-width:1200px; margin:0 auto; padding:20px; position:relative; z-index:1; }
+        header { text-align:center; padding:40px 0; position:relative; }
+        .matrix-text { font-size:5vw; font-weight:bold; text-transform:uppercase; color:#0f0;
+            text-shadow:0 0 10px #0f0,0 0 20px #0f0,0 0 40px #0f0,0 0 80px #0f0;
+            animation:wobble 5s infinite ease-in-out,pulse 2s infinite alternate,glitch 8s infinite;
+            transform-style:preserve-3d; perspective:500px; margin-bottom:10px; letter-spacing:5px; }
+        .subtitle { font-size:1.5rem; color:#f00; text-shadow:0 0 10px #f00; margin-bottom:40px; animation:shake 5s infinite; }
+        .content { display:flex; flex-wrap:wrap; justify-content:space-between; gap:30px; margin-bottom:50px; }
+        .form-container, .result-container { flex:1; min-width:300px; background:rgba(0,20,0,0.7); border:2px solid #0f0;
+            border-radius:10px; padding:30px; box-shadow:0 0 20px #0f0, inset 0 0 20px rgba(0,255,0,0.2); animation:pulse 3s infinite alternate; position:relative; overflow:hidden; }
+        .form-title, .result-title { font-size:1.8rem; color:#0f0; text-align:center; margin-bottom:25px; text-shadow:0 0 10px #0f0; position:relative; }
+        .input-group { margin-bottom:20px; }
+        label { display:block; margin-bottom:10px; font-size:1.2rem; color:#0f0; }
+        input { width:100%; padding:15px; background:rgba(0,10,0,0.8); border:2px solid #0f0; border-radius:5px; color:#0f0; font-size:1.2rem; outline:none; transition:all 0.3s; }
+        input:focus { box-shadow:0 0 15px #0f0; border-color:#0f0; }
+        button { width:100%; padding:15px; background:linear-gradient(to bottom,#0a0,#030); border:2px solid #0f0; border-radius:5px; color:#0f0; font-size:1.3rem; font-weight:bold; text-transform:uppercase; cursor:pointer; transition:all 0.3s; text-shadow:0 0 5px #0f0; letter-spacing:2px; animation:pulse 2s infinite; position:relative; overflow:hidden; }
+        button::before { content:""; position:absolute; top:0; left:-100%; width:100%; height:100%; background:linear-gradient(90deg, transparent, rgba(0,255,0,0.4), transparent); transition:0.5s; }
+        button:hover::before { left:100%; }
+        button:hover { background:linear-gradient(to bottom,#0f0,#060); color:#000; box-shadow:0 0 20px #0f0; transform:translateY(-3px); }
+        .result-content { min-height:200px; padding:20px; background:rgba(0,10,0,0.5); border-radius:5px; font-family:monospace; font-size:1.1rem; line-height:1.6; overflow-x:auto; }
+        .error { color:#f00; text-shadow:0 0 5px #f00; animation:shake 0.5s; }
+        .success { color:#0f0; text-shadow:0 0 5px #0f0; }
+        .loading { text-align:center; color:#0f0; font-size:1.5rem; animation:spin 1.5s infinite linear; }
+        footer { text-align:center; padding:20px; border-top:1px solid #0f0; margin-top:40px; position:relative; }
+        .contact-section { display:flex; flex-direction:column; align-items:center; gap:15px; margin:20px 0; }
+        .whatsapp-icon { display:inline-block; font-size:3rem; color:#0f0; text-shadow:0 0 10px #0f0; animation:spin3d 8s infinite linear,pulse 2s infinite alternate; transform-style:preserve-3d; transition:all 0.3s; }
+        .whatsapp-icon:hover { color:#25D366; text-shadow:0 0 20px #25D366; transform:scale(1.2) rotate(10deg); }
+        .contact-btn { display:inline-block; padding:12px 30px; background:linear-gradient(to bottom,#0a0,#030); border:2px solid #0f0; border-radius:5px; color:#0f0; font-size:1.1rem; font-weight:bold; text-decoration:none; text-transform:uppercase; cursor:pointer; transition:all 0.3s; text-shadow:0 0 5px #0f0; letter-spacing:1px; animation:pulse 2s infinite; }
+        .contact-btn:hover { background:linear-gradient(to bottom,#0f0,#060); color:#000; box-shadow:0 0 20px #0f0; transform:translateY(-3px); }
+        .copyright { font-size:1rem; color:#0a0; margin-top:10px; }
+        .status-indicator { position:fixed; top:20px; right:20px; display:flex; align-items:center; gap:10px; background:rgba(0,20,0,0.7); padding:10px 15px; border-radius:30px; border:1px solid #0f0; box-shadow:0 0 10px #0f0; z-index:100; }
+        .status-dot { width:12px; height:12px; border-radius:50%; background:#0f0; box-shadow:0 0 10px #0f0; animation:pulse 1s infinite alternate; }
+        .status-text { font-size:0.9rem; color:#0f0; }
+        .terminal-line { position:absolute; width:100%; height:1px; background:linear-gradient(90deg, transparent, #0f0, transparent); opacity:0.3; }
+        @keyframes wobble { 0%,100%{ transform:rotate3d(1,1,0,-5deg);} 50%{ transform:rotate3d(1,1,0,5deg);} }
+        @keyframes pulse { 0%{ opacity:0.8;} 100%{ opacity:1;} }
+        @keyframes glitch { 0%,100%{ transform:translate(0);} 10%{ transform:translate(-2px,-2px);} 20%{ transform:translate(2px,2px);} 30%{ transform:translate(-2px,2px);} 40%{ transform:translate(2px,-2px);} 50%{ transform:translate(0);} }
+        @keyframes shake { 0%,100%{ transform:translateX(0);} 10%,30%,50%,70%,90%{ transform:translateX(-5px);} 20%,40%,60%,80%{ transform:translateX(5px);} }
+        @keyframes spin { 0%{ transform:rotate(0deg);} 100%{ transform:rotate(360deg);} }
+        @keyframes spin3d { 0%{ transform:rotateY(0deg);} 100%{ transform:rotateY(360deg);} }
+        @keyframes rotate { 0%{ transform:rotate(0deg);} 100%{ transform:rotate(360deg);} }
+        @media (max-width:768px) { .matrix-text{font-size:10vw;} .subtitle{font-size:1.2rem;} .content{flex-direction:column;} .form-container,.result-container{min-width:100%} input,button{font-size:1rem} .status-indicator{top:10px;right:10px;padding:8px 12px;} }
+        @media (max-width:480px) { .container{padding:10px;} .form-container,.result-container{padding:20px;} .matrix-text{font-size:12vw;letter-spacing:2px;} }
     </style>
 </head>
 <body>
     <canvas id="matrix"></canvas>
-    
-    <!-- Terminal lines for visual effect -->
-    <div class="terminal-line" style="top: 20%;"></div>
-    <div class="terminal-line" style="top: 40%;"></div>
-    <div class="terminal-line" style="top: 60%;"></div>
-    <div class="terminal-line" style="top: 80%;"></div>
-    
+
+    <div class="terminal-line" style="top:20%;"></div>
+    <div class="terminal-line" style="top:40%;"></div>
+    <div class="terminal-line" style="top:60%;"></div>
+    <div class="terminal-line" style="top:80%;"></div>
+
     <div class="status-indicator">
         <div class="status-dot"></div>
         <div class="status-text">SYSTEM ONLINE</div>
     </div>
-    
+
     <div class="container">
         <header>
-            <h1 class="matrix-text">MATRIX OVERLOAD</h1>
+            <h1 class="matrix-text">FAZAL-E-AZEEM</h1>
             <p class="subtitle">IMEI DEVICE INFORMATION LOOKUP</p>
         </header>
-        
+
         <div class="content">
             <div class="form-container">
                 <h2 class="form-title">ENTER IMEI</h2>
-                <form id="imeiForm">
+                <form id="imeiForm" autocomplete="off">
                     <div class="input-group">
                         <label for="imeiInput">DEVICE IMEI NUMBER:</label>
-                        <input type="text" id="imeiInput" placeholder="e.g., 861834076332477" maxlength="15" required>
+                        <input type="text" id="imeiInput" placeholder="e.g., 353010111111110" maxlength="15" required>
                     </div>
-                    <button type="submit" id="lookupBtn">
-                        <i class="fas fa-terminal"></i> HACK DEVICE
-                    </button>
+                    <button type="submit" id="lookupBtn"><i class="fas fa-terminal"></i> HACK DEVICE</button>
                 </form>
             </div>
-            
+
             <div class="result-container">
                 <h2 class="result-title">DEVICE INFORMATION</h2>
                 <div class="result-content" id="result">
-                    <p>Enter IMEI to retrieve device information...</p>
+                    <p>Enter IMEI TO RETRIEVE DEVICE INFORMATION...</p>
                 </div>
             </div>
         </div>
-        
+
         <footer>
             <div class="contact-section">
-                <a href="https://wa.me/923257460249" target="_blank" class="whatsapp-icon">
-                    <i class="fab fa-whatsapp"></i>
-                </a>
-                <a href="https://wa.me/923257460249" target="_blank" class="contact-btn">
-                    <i class="fas fa-comment-alt"></i> CONTACT SUPPORT
-                </a>
+                <a href="https://wa.me/923257460249" target="_blank" class="whatsapp-icon"><i class="fab fa-whatsapp"></i></a>
+                <a href="https://wa.me/923257460249" target="_blank" class="contact-btn"><i class="fas fa-comment-alt"></i> CONTACT SUPPORT</a>
             </div>
-            <p class="copyright">© 2023 MATRIX OVERLOAD SYSTEM | SECURE CONNECTION ESTABLISHED</p>
+            <p class="copyright">© 2025 MATRIX OVERLOAD SYSTEM | SECURE CONNECTION ESTABLISHED</p>
         </footer>
     </div>
 
-    <!-- Audio elements for sound effects -->
-    <audio id="typingSound" preload="auto">
-        <source src="https://assets.mixkit.co/active_storage/sfx/286/286-preview.mp3" type="audio/mpeg">
-    </audio>
-    <audio id="hackSound" preload="auto">
-        <source src="https://assets.mixkit.co/active_storage/sfx/250/250-preview.mp3" type="audio/mpeg">
-    </audio>
-    <audio id="errorSound" preload="auto">
-        <source src="https://assets.mixkit.co/active_storage/sfx/257/257-preview.mp3" type="audio/mpeg">
-    </audio>
-    <audio id="successSound" preload="auto">
-        <source src="https://assets.mixkit.co/active_storage/sfx/258/258-preview.mp3" type="audio/mpeg">
-    </audio>
-    <audio id="ambientSound" preload="auto" loop>
-        <source src="https://assets.mixkit.co/active_storage/sfx/251/251-preview.mp3" type="audio/mpeg">
-    </audio>
+    <!-- Audio -->
+    <audio id="typingSound" preload="auto"><source src="https://assets.mixkit.co/active_storage/sfx/286/286-preview.mp3" type="audio/mpeg"></audio>
+    <audio id="hackSound" preload="auto"><source src="https://assets.mixkit.co/active_storage/sfx/250/250-preview.mp3" type="audio/mpeg"></audio>
+    <audio id="errorSound" preload="auto"><source src="https://assets.mixkit.co/active_storage/sfx/257/257-preview.mp3" type="audio/mpeg"></audio>
+    <audio id="successSound" preload="auto"><source src="https://assets.mixkit.co/active_storage/sfx/258/258-preview.mp3" type="audio/mpeg"></audio>
+    <audio id="ambientSound" preload="auto" loop><source src="https://assets.mixkit.co/active_storage/sfx/251/251-preview.mp3" type="audio/mpeg"></audio>
 
     <script>
-        // Matrix Rain Effect - Optimized for performance
-        const canvas = document.getElementById('matrix');
-        const ctx = canvas.getContext('2d');
-
-        function resizeCanvas() {
-            canvas.width = window.innerWidth;
-            canvas.height = window.innerHeight;
-        }
-
-        resizeCanvas();
-
-        const chars = 'アァカサタナハマヤャラワガザダバパイィキシチニヒミリヰギジヂビピウゥクスツヌフムユュルグズブヅプエェケセテネヘメレヱゲゼデベペオォコソトノホモヨョロヲゴゾドボポヴッンABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
-        const charArray = chars.split('');
-        
-        // Adjust density based on screen size for performance
-        const fontSize = Math.max(12, Math.min(16, window.innerWidth / 100));
-        const columns = Math.floor(canvas.width / fontSize);
-        const drops = [];
-
-        for (let x = 0; x < columns; x++) {
-            drops[x] = Math.random() * -100;
-        }
-
-        let lastTime = 0;
-        const fps = 30;
-        const fpsInterval = 1000 / fps;
-
-        function drawMatrix(timestamp) {
-            if (!lastTime) lastTime = timestamp;
-            const elapsed = timestamp - lastTime;
-
-            if (elapsed > fpsInterval) {
-                lastTime = timestamp - (elapsed % fpsInterval);
-                
-                ctx.fillStyle = 'rgba(0, 0, 0, 0.05)';
-                ctx.fillRect(0, 0, canvas.width, canvas.height);
-                
-                ctx.fillStyle = '#0F0';
-                ctx.font = `${fontSize}px monospace`;
-                
-                for (let i = 0; i < drops.length; i++) {
-                    const text = charArray[Math.floor(Math.random() * charArray.length)];
-                    ctx.fillText(text, i * fontSize, drops[i] * fontSize);
-                    
-                    if (drops[i] * fontSize > canvas.height && Math.random() > 0.975) {
-                        drops[i] = 0;
-                    }
-                    
-                    drops[i]++;
-                }
+    /* ---------------- Matrix visual (kept same) ---------------- */
+    const canvas = document.getElementById('matrix');
+    const ctx = canvas.getContext('2d');
+    function resizeCanvas(){ canvas.width = window.innerWidth; canvas.height = window.innerHeight; }
+    resizeCanvas();
+    const chars = 'アァカサタナハマヤャラワガザダバパイィキシチニヒミリヰギジヂビピウゥクスツヌフムユュルグズブヅプエェケセテネヘメレヱゲゼデベペオォコソトノホモヨョロヲゴゾドボポヴッンABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+    const charArray = chars.split('');
+    const fontSize = Math.max(12, Math.min(16, window.innerWidth / 100));
+    const columns = Math.floor(canvas.width / fontSize);
+    const drops = [];
+    for (let x = 0; x < columns; x++) { drops[x] = Math.random() * -100; }
+    let lastTime = 0;
+    const fps = 30;
+    const fpsInterval = 1000 / fps;
+    function drawMatrix(timestamp){
+        if (!lastTime) lastTime = timestamp;
+        const elapsed = timestamp - lastTime;
+        if (elapsed > fpsInterval) {
+            lastTime = timestamp - (elapsed % fpsInterval);
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.05)';
+            ctx.fillRect(0,0,canvas.width,canvas.height);
+            ctx.fillStyle = '#0F0';
+            ctx.font = `${fontSize}px monospace`;
+            for (let i=0;i<drops.length;i++){
+                const text = charArray[Math.floor(Math.random()*charArray.length)];
+                ctx.fillText(text, i*fontSize, drops[i]*fontSize);
+                if (drops[i]*fontSize > canvas.height && Math.random() > 0.975) { drops[i] = 0; }
+                drops[i]++;
             }
-            
-            requestAnimationFrame(drawMatrix);
         }
-
         requestAnimationFrame(drawMatrix);
+    }
+    requestAnimationFrame(drawMatrix);
+    window.addEventListener('resize', resizeCanvas);
+    document.addEventListener('mousemove', function(e){
+        const elements = document.querySelectorAll('.form-container, .result-container');
+        const x = e.clientX / window.innerWidth;
+        const y = e.clientY / window.innerHeight;
+        elements.forEach(el => { el.style.transform = `perspective(1000px) rotateY(${x*5-2.5}deg) rotateX(${y*-5+2.5}deg)`; });
+    });
 
-        // Sound Effects
-        const typingSound = document.getElementById('typingSound');
-        const hackSound = document.getElementById('hackSound');
-        const errorSound = document.getElementById('errorSound');
-        const successSound = document.getElementById('successSound');
-        const ambientSound = document.getElementById('ambientSound');
+    /* ---------------- Audio init ---------------- */
+    const typingSound = document.getElementById('typingSound');
+    const hackSound = document.getElementById('hackSound');
+    const errorSound = document.getElementById('errorSound');
+    const successSound = document.getElementById('successSound');
+    const ambientSound = document.getElementById('ambientSound');
+    let audioStarted = false;
+    function startAudio(){ if (audioStarted) return; audioStarted = true; try{ ambientSound.volume = 0.2; ambientSound.play().catch(e=>console.log("Ambient audio failed",e)); }catch(e){console.log(e);} document.removeEventListener('click', startAudio); document.removeEventListener('keydown', startAudio); }
+    document.addEventListener('click', startAudio);
+    document.addEventListener('keydown', startAudio);
+    function playSound(audioElement){ try{ audioElement.currentTime = 0; audioElement.play().catch(e => console.log("Audio play:", e)); } catch(e){ console.log("Sound error:", e); } }
+    document.getElementById('imeiInput').addEventListener('input', function(){ playSound(typingSound); });
 
-        // Start ambient sound on user interaction
-        let audioStarted = false;
-        function startAudio() {
-            if (audioStarted) return;
-            audioStarted = true;
-            
-            try {
-                ambientSound.volume = 0.2;
-                ambientSound.play().catch(e => console.log("Ambient audio play failed:", e));
-            } catch (e) {
-                console.log("Audio initialization error:", e);
-            }
-            
-            // Remove event listeners after first interaction
-            document.removeEventListener('click', startAudio);
-            document.removeEventListener('keydown', startAudio);
+    /* ---------------- IMEI Lookup (CORS bypass with allorigins) ----------------
+       Uses your provided API: https://ng-imei-info.vercel.app/?imei_num=
+       We call: https://api.allorigins.win/raw?url=<encoded_api_url>
+       Then parse returned text to JSON and display in simple key:value lines (Option A)
+    --------------------------------------------------------------------------- */
+    document.getElementById('imeiForm').addEventListener('submit', async function(e){
+        e.preventDefault();
+        const imei = document.getElementById('imeiInput').value.trim();
+        const resultDiv = document.getElementById('result');
+
+        // validation
+        if (!imei || imei.length !== 15 || !/^\d+$/.test(imei)) {
+            resultDiv.innerHTML = '<p class="error">ERROR: INVALID IMEI FORMAT - MUST BE 15 DIGITS</p>';
+            playSound(errorSound);
+            resultDiv.classList.add('shake');
+            setTimeout(()=>resultDiv.classList.remove('shake'),500);
+            return;
         }
 
-        document.addEventListener('click', startAudio);
-        document.addEventListener('keydown', startAudio);
+        // play hack sound + loading
+        playSound(hackSound);
+        resultDiv.innerHTML = '<p class="loading"><i class="fas fa-cog"></i> SCANNING DEVICE...</p>';
 
-        // IMEI Lookup Functionality
-        document.getElementById('imeiForm').addEventListener('submit', async function(e) {
-            e.preventDefault();
-            const imei = document.getElementById('imeiInput').value.trim();
-            const resultDiv = document.getElementById('result');
-            
-            if (!imei || imei.length !== 15 || !/^\d+$/.test(imei)) {
-                resultDiv.innerHTML = '<p class="error">ERROR: INVALID IMEI FORMAT - MUST BE 15 DIGITS</p>';
-                playSound(errorSound);
-                resultDiv.classList.add('shake');
-                setTimeout(() => resultDiv.classList.remove('shake'), 500);
-                return;
+        try {
+            // build api url and allorigins wrapper
+            const apiUrl = `https://ng-imei-info.vercel.app/?imei_num=${imei}`;
+            const wrapped = `https://api.allorigins.win/raw?url=${encodeURIComponent(apiUrl)}`;
+
+            // timeout with AbortController
+            const controller = new AbortController();
+            const timeoutId = setTimeout(()=>controller.abort(), 12000); // 12s
+
+            const response = await fetch(wrapped, { signal: controller.signal });
+            clearTimeout(timeoutId);
+
+            if (!response.ok) {
+                throw new Error(`API response not ok: ${response.status}`);
             }
-            
-            // Play hack sound
-            playSound(hackSound);
-            
-            // Show loading
-            resultDiv.innerHTML = '<p class="loading"><i class="fas fa-cog"></i> SCANNING DEVICE...</p>';
-            
+
+            // allorigins returns raw text => parse to JSON
+            const text = await response.text();
+            let json;
             try {
-                // Fetch data from API with timeout
-                const controller = new AbortController();
-                const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
-                
-                const response = await fetch(`https://ng-imei-info.vercel.app/api/device-info?imei=${imei}`, {
-                    signal: controller.signal
+                json = JSON.parse(text);
+            } catch (parseErr) {
+                // sometimes the API itself may return JSON string inside another object or with BOM - try cleanup
+                const cleaned = text.replace(/^\uFEFF/, '');
+                json = JSON.parse(cleaned);
+            }
+
+            // expected structure: { result: { header: {...}, items: [...] }, made_by: "..." }
+            if (!json || !json.result) {
+                throw new Error('Unexpected API format');
+            }
+
+            const res = json.result;
+            // Build simple Option A output: key: value lines (header first, then items)
+            let out = '<div class="success">';
+            // header
+            if (res.header) {
+                const h = res.header;
+                if (h.photo) {
+                    out += `<p><strong>IMAGE:</strong><br><img src="${h.photo}" alt="device" style="max-width:160px; margin:10px 0; border:2px solid #0f0; border-radius:6px;"></p>`;
+                }
+                if (h.brand) out += `<p><strong>BRAND:</strong> ${h.brand}</p>`;
+                if (h.model) out += `<p><strong>MODEL:</strong> ${h.model}</p>`;
+                if (h.imei) out += `<p><strong>IMEI:</strong> ${h.imei}</p>`;
+            }
+
+            // items array: simple flattening
+            if (Array.isArray(res.items)) {
+                // Many items come as sequence of role header / role item.
+                // We'll print headers as separators, and items below them.
+                let currentHeader = '';
+                res.items.forEach(entry => {
+                    if (!entry || !entry.role) return;
+                    if (entry.role === 'header') {
+                        currentHeader = entry.title || '';
+                        out += `<p style="margin-top:8px; text-decoration:underline;"><strong>${currentHeader}</strong></p>`;
+                    } else if (entry.role === 'item') {
+                        const title = entry.title || 'UNKNOWN';
+                        const content = entry.content || 'N/A';
+                        out += `<p>• <strong>${title}:</strong> ${content}</p>`;
+                    } else {
+                        // fallback
+                        out += `<p>${JSON.stringify(entry)}</p>`;
+                    }
                 });
-                
-                clearTimeout(timeoutId);
-                
-                if (!response.ok) {
-                    throw new Error(`API error: ${response.status}`);
-                }
-                
-                const data = await response.json();
-                
-                // Remove 'made_by' field from response if it exists
-                if (data.made_by) {
-                    delete data.made_by;
-                }
-                
-                // Format and display the data
-                let output = '<div class="success">';
-                for (const key in data) {
-                    if (data.hasOwnProperty(key)) {
-                        output += `<p><strong>${key.toUpperCase()}:</strong> ${data[key] || 'N/A'}</p>`;
-                    }
-                }
-                output += '</div>';
-                resultDiv.innerHTML = output;
-                
-                playSound(successSound);
-            } catch (error) {
-                console.error('Error:', error);
-                
-                // Try alternative API endpoint
-                try {
-                    resultDiv.innerHTML = '<p class="loading"><i class="fas fa-cog"></i> TRYING ALTERNATIVE API...</p>';
-                    
-                    const response = await fetch(`https://ng-imei-info.vercel.app/?imei_num=${imei}`);
-                    if (!response.ok) {
-                        throw new Error('Alternative API failed');
-                    }
-                    
-                    const data = await response.json();
-                    
-                    // Remove 'made_by' field from response if it exists
-                    if (data.made_by) {
-                        delete data.made_by;
-                    }
-                    
-                    // Format and display the data
-                    let output = '<div class="success">';
-                    for (const key in data) {
-                        if (data.hasOwnProperty(key)) {
-                            output += `<p><strong>${key.toUpperCase()}:</strong> ${data[key] || 'N/A'}</p>`;
-                        }
-                    }
-                    output += '</div>';
-                    resultDiv.innerHTML = output;
-                    
-                    playSound(successSound);
-                } catch (fallbackError) {
-                    console.error('Fallback error:', fallbackError);
-                    resultDiv.innerHTML = '<p class="error">ERROR: NETWORK FAILURE - TRY AGAIN LATER</p>';
-                    playSound(errorSound);
-                }
             }
-        });
 
-        // Helper function to play sounds with error handling
-        function playSound(audioElement) {
+            out += '</div>';
+            resultDiv.innerHTML = out;
+            playSound(successSound);
+
+        } catch (err) {
+            console.error('IMEI lookup Error:', err);
+
+            // Try a quick fallback: direct proxy via another public mirror (if allorigins fails)
             try {
-                // Reset audio to start
-                audioElement.currentTime = 0;
-                audioElement.play().catch(e => console.log("Audio play failed:", e));
-            } catch (e) {
-                console.log("Sound error:", e);
+                resultDiv.innerHTML = '<p class="loading"><i class="fas fa-cog"></i> TRYING FALLBACK PROXY...</p>';
+                const apiUrl = `https://ng-imei-info.vercel.app/?imei_num=${imei}`;
+                const fallback = `https://api.allorigins.cf/raw?url=${encodeURIComponent(apiUrl)}`; // alternate mirror
+                const fallbackResp = await fetch(fallback, { cache: "no-store" });
+                if (!fallbackResp.ok) throw new Error('Fallback failed');
+                const text = await fallbackResp.text();
+                const json = JSON.parse(text);
+                if (!json || !json.result) throw new Error('Fallback unexpected format');
+
+                // reuse display logic
+                const res = json.result;
+                let out = '<div class="success">';
+                if (res.header) {
+                    const h = res.header;
+                    if (h.photo) {
+                        out += `<p><strong>IMAGE:</strong><br><img src="${h.photo}" alt="device" style="max-width:160px; margin:10px 0; border:2px solid #0f0; border-radius:6px;"></p>`;
+                    }
+                    if (h.brand) out += `<p><strong>BRAND:</strong> ${h.brand}</p>`;
+                    if (h.model) out += `<p><strong>MODEL:</strong> ${h.model}</p>`;
+                    if (h.imei) out += `<p><strong>IMEI:</strong> ${h.imei}</p>`;
+                }
+                if (Array.isArray(res.items)) {
+                    res.items.forEach(entry => {
+                        if (!entry || !entry.role) return;
+                        if (entry.role === 'header') {
+                            out += `<p style="margin-top:8px; text-decoration:underline;"><strong>${entry.title}</strong></p>`;
+                        } else if (entry.role === 'item') {
+                            out += `<p>• <strong>${entry.title}:</strong> ${entry.content}</p>`;
+                        }
+                    });
+                }
+                out += '</div>';
+                resultDiv.innerHTML = out;
+                playSound(successSound);
+                return;
+            } catch (fbErr) {
+                console.error('Fallback error:', fbErr);
             }
+
+            resultDiv.innerHTML = '<p class="error">ERROR: NETWORK / CORS / API FAILURE - TRY AGAIN LATER</p>';
+            playSound(errorSound);
         }
-
-        // Typing sound effect
-        document.getElementById('imeiInput').addEventListener('input', function() {
-            playSound(typingSound);
-        });
-
-        // Responsive canvas on resize
-        window.addEventListener('resize', function() {
-            resizeCanvas();
-        });
-
-        // Add some visual effects
-        document.addEventListener('mousemove', function(e) {
-            const elements = document.querySelectorAll('.form-container, .result-container');
-            const x = e.clientX / window.innerWidth;
-            const y = e.clientY / window.innerHeight;
-            
-            elements.forEach(el => {
-                el.style.transform = `perspective(1000px) rotateY(${x * 5 - 2.5}deg) rotateX(${y * -5 + 2.5}deg)`;
-            });
-        });
+    });
     </script>
 </body>
 </html>
