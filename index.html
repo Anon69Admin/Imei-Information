@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -70,7 +69,7 @@
 
     <div class="container">
         <header>
-            <h1 class="matrix-text">FAZAL-E-AZEEM</h1>
+ <h1 class="matrix-text">FAZAL-E-AZEEM</h1>
             <p class="subtitle">IMEI DEVICE INFORMATION LOOKUP</p>
         </header>
 
@@ -165,11 +164,7 @@
     function playSound(audioElement){ try{ audioElement.currentTime = 0; audioElement.play().catch(e => console.log("Audio play:", e)); } catch(e){ console.log("Sound error:", e); } }
     document.getElementById('imeiInput').addEventListener('input', function(){ playSound(typingSound); });
 
-    /* ---------------- IMEI Lookup (CORS bypass with allorigins) ----------------
-       Uses your provided API: https://ng-imei-info.vercel.app/?imei_num=
-       We call: https://api.allorigins.win/raw?url=<encoded_api_url>
-       Then parse returned text to JSON and display in simple key:value lines (Option A)
-    --------------------------------------------------------------------------- */
+    /* ---------------- Improved IMEI Lookup with Multiple Fallbacks ---------------- */
     document.getElementById('imeiForm').addEventListener('submit', async function(e){
         e.preventDefault();
         const imei = document.getElementById('imeiInput').value.trim();
@@ -189,28 +184,83 @@
         resultDiv.innerHTML = '<p class="loading"><i class="fas fa-cog"></i> SCANNING DEVICE...</p>';
 
         try {
-            // build api url and allorigins wrapper
+            // Method 1: Try direct API call first (if CORS allows)
             const apiUrl = `https://ng-imei-info.vercel.app/?imei_num=${imei}`;
-            const wrapped = `https://api.allorigins.win/raw?url=${encodeURIComponent(apiUrl)}`;
+            
+            // Multiple proxy endpoints to try
+            const proxyEndpoints = [
+                `https://api.allorigins.win/raw?url=${encodeURIComponent(apiUrl)}`,
+                `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(apiUrl)}`,
+                `https://corsproxy.io/?${encodeURIComponent(apiUrl)}`,
+                `https://api.corsanywhere.workers.dev/?${encodeURIComponent(apiUrl)}`
+            ];
 
-            // timeout with AbortController
-            const controller = new AbortController();
-            const timeoutId = setTimeout(()=>controller.abort(), 12000); // 12s
+            let response;
+            let lastError;
 
-            const response = await fetch(wrapped, { signal: controller.signal });
-            clearTimeout(timeoutId);
-
-            if (!response.ok) {
-                throw new Error(`API response not ok: ${response.status}`);
+            // Try direct call first
+            try {
+                const controller = new AbortController();
+                const timeoutId = setTimeout(() => controller.abort(), 8000);
+                
+                response = await fetch(apiUrl, { 
+                    signal: controller.signal,
+                    mode: 'cors',
+                    headers: {
+                        'Accept': 'application/json',
+                    }
+                });
+                clearTimeout(timeoutId);
+                
+                if (response.ok) {
+                    console.log("Direct API call successful");
+                } else {
+                    throw new Error(`Direct call failed: ${response.status}`);
+                }
+            } catch (directError) {
+                console.log("Direct call failed, trying proxies...", directError);
+                lastError = directError;
+                
+                // Try each proxy endpoint
+                for (const proxyUrl of proxyEndpoints) {
+                    try {
+                        resultDiv.innerHTML = `<p class="loading"><i class="fas fa-cog"></i> TRYING PROXY: ${proxyUrl.split('/')[2]}...</p>`;
+                        
+                        const controller = new AbortController();
+                        const timeoutId = setTimeout(() => controller.abort(), 8000);
+                        
+                        response = await fetch(proxyUrl, { 
+                            signal: controller.signal,
+                            headers: {
+                                'Accept': 'application/json',
+                            }
+                        });
+                        clearTimeout(timeoutId);
+                        
+                        if (response.ok) {
+                            console.log(`Proxy ${proxyUrl} successful`);
+                            break;
+                        } else {
+                            throw new Error(`Proxy failed: ${response.status}`);
+                        }
+                    } catch (proxyError) {
+                        lastError = proxyError;
+                        console.log(`Proxy ${proxyUrl} failed:`, proxyError);
+                        continue;
+                    }
+                }
             }
 
-            // allorigins returns raw text => parse to JSON
+            if (!response || !response.ok) {
+                throw lastError || new Error('All connection methods failed');
+            }
+
             const text = await response.text();
             let json;
             try {
                 json = JSON.parse(text);
             } catch (parseErr) {
-                // sometimes the API itself may return JSON string inside another object or with BOM - try cleanup
+                // Clean BOM and try again
                 const cleaned = text.replace(/^\uFEFF/, '');
                 json = JSON.parse(cleaned);
             }
@@ -221,8 +271,9 @@
             }
 
             const res = json.result;
-            // Build simple Option A output: key: value lines (header first, then items)
+            // Build output
             let out = '<div class="success">';
+            
             // header
             if (res.header) {
                 const h = res.header;
@@ -234,10 +285,8 @@
                 if (h.imei) out += `<p><strong>IMEI:</strong> ${h.imei}</p>`;
             }
 
-            // items array: simple flattening
+            // items array
             if (Array.isArray(res.items)) {
-                // Many items come as sequence of role header / role item.
-                // We'll print headers as separators, and items below them.
                 let currentHeader = '';
                 res.items.forEach(entry => {
                     if (!entry || !entry.role) return;
@@ -248,9 +297,6 @@
                         const title = entry.title || 'UNKNOWN';
                         const content = entry.content || 'N/A';
                         out += `<p>• <strong>${title}:</strong> ${content}</p>`;
-                    } else {
-                        // fallback
-                        out += `<p>${JSON.stringify(entry)}</p>`;
                     }
                 });
             }
@@ -261,50 +307,29 @@
 
         } catch (err) {
             console.error('IMEI lookup Error:', err);
-
-            // Try a quick fallback: direct proxy via another public mirror (if allorigins fails)
-            try {
-                resultDiv.innerHTML = '<p class="loading"><i class="fas fa-cog"></i> TRYING FALLBACK PROXY...</p>';
-                const apiUrl = `https://ng-imei-info.vercel.app/?imei_num=${imei}`;
-                const fallback = `https://api.allorigins.cf/raw?url=${encodeURIComponent(apiUrl)}`; // alternate mirror
-                const fallbackResp = await fetch(fallback, { cache: "no-store" });
-                if (!fallbackResp.ok) throw new Error('Fallback failed');
-                const text = await fallbackResp.text();
-                const json = JSON.parse(text);
-                if (!json || !json.result) throw new Error('Fallback unexpected format');
-
-                // reuse display logic
-                const res = json.result;
-                let out = '<div class="success">';
-                if (res.header) {
-                    const h = res.header;
-                    if (h.photo) {
-                        out += `<p><strong>IMAGE:</strong><br><img src="${h.photo}" alt="device" style="max-width:160px; margin:10px 0; border:2px solid #0f0; border-radius:6px;"></p>`;
-                    }
-                    if (h.brand) out += `<p><strong>BRAND:</strong> ${h.brand}</p>`;
-                    if (h.model) out += `<p><strong>MODEL:</strong> ${h.model}</p>`;
-                    if (h.imei) out += `<p><strong>IMEI:</strong> ${h.imei}</p>`;
-                }
-                if (Array.isArray(res.items)) {
-                    res.items.forEach(entry => {
-                        if (!entry || !entry.role) return;
-                        if (entry.role === 'header') {
-                            out += `<p style="margin-top:8px; text-decoration:underline;"><strong>${entry.title}</strong></p>`;
-                        } else if (entry.role === 'item') {
-                            out += `<p>• <strong>${entry.title}:</strong> ${entry.content}</p>`;
-                        }
-                    });
-                }
-                out += '</div>';
-                resultDiv.innerHTML = out;
-                playSound(successSound);
-                return;
-            } catch (fbErr) {
-                console.error('Fallback error:', fbErr);
+            
+            // Show more specific error messages
+            let errorMsg = 'NETWORK ERROR - TRY AGAIN LATER';
+            
+            if (err.name === 'AbortError') {
+                errorMsg = 'REQUEST TIMEOUT - SERVER NOT RESPONDING';
+            } else if (err.message.includes('Failed to fetch')) {
+                errorMsg = 'CONNECTION FAILED - CHECK INTERNET CONNECTION';
+            } else if (err.message.includes('Unexpected API format')) {
+                errorMsg = 'API FORMAT ERROR - SERVICE TEMPORARILY UNAVAILABLE';
             }
-
-            resultDiv.innerHTML = '<p class="error">ERROR: NETWORK / CORS / API FAILURE - TRY AGAIN LATER</p>';
+            
+            resultDiv.innerHTML = `<p class="error">ERROR: ${errorMsg}</p>`;
             playSound(errorSound);
+            
+            // Show retry button
+            const retryBtn = document.createElement('button');
+            retryBtn.innerHTML = '<i class="fas fa-redo"></i> RETRY CONNECTION';
+            retryBtn.style.marginTop = '15px';
+            retryBtn.onclick = function() {
+                document.getElementById('imeiForm').dispatchEvent(new Event('submit'));
+            };
+            resultDiv.appendChild(retryBtn);
         }
     });
     </script>
